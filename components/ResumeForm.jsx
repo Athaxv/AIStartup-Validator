@@ -69,19 +69,22 @@ const onSubmit = async (values) => {
     const data = await res.json();
 
     // Clean and parse the Gemini output
-    const cleaned = data.analysis
-      .replace(/```json\n?/, "")
-      .replace(/```/, "")
-      .trim();
+    // const cleaned = data.analysis
+    //   .replace(/```json\n?/, "")
+    //   .replace(/```/, "")
+    //   .trim();
 
-    const parsed = JSON.parse(cleaned);
-    console.log("parsed", parsed)
-    if (parsed?.Result && typeof parsed.score === "number") {
-      setAIResult(parsed);  
-      setDialogOpen(true);
-    } else {
-      console.error("Gemini returned invalid structure:", parsed);
-    }
+    console.log("parsed", data)
+    if (data?.analysis && typeof data.score === "number") {
+  setAIResult({
+    Result: data.analysis,
+    score: data.score,
+    keyImprovements: data.keyImprovements || [],
+  });
+  setDialogOpen(true);
+} else {
+  console.error("Gemini returned invalid structure:", data);
+}
   } catch (err) {
     console.error("API error:", err);
   } finally {

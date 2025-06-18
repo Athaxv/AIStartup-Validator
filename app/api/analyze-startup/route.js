@@ -1,12 +1,15 @@
 // app/api/analyze-startup/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+// import { prisma } from "@/lib/prisma";
+// import { prisma } from "@/lib/prisma";
+// import { prisma } from "@/lib/prisma";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(req) {
   const body = await req.json();
-    console.log("output", body);
+  console.log("output", body);
   const {
     startupName,
     pitch,
@@ -18,7 +21,7 @@ export async function POST(req) {
   } = body;
 
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-const prompt = `
+  const prompt = `
 You are a startup advisor and investor. Analyze the following startup idea and provide a detailed evaluation covering:
 
 1. Idea originality and clarity
@@ -53,8 +56,27 @@ Your response should be in **valid JSON** using the structure below:
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-    console.log(text);
-    return NextResponse.json({ analysis: text, score: String });
+    console.log("new_Result", text);
+    const cleaned = text.replace(/```json\n?/, "").replace(/```/, "").trim();
+    const parsed = JSON.parse(cleaned);
+    console.log(parsed.Result);
+    console.log("Yhi", parsed.keyImprovements[1]) // ✅ Output: 20
+
+    // await prisma.StartupAnalysis.create({
+    //   data: {
+    //     startupName,
+    //     pitch,
+    //     revenueModel,
+    //     industry,
+    //     stage,
+    //     description,
+    //     problem,
+    //     result: parsed.Result,
+    //     score: parsed.score,
+    //     keyImprovements: parsed.keyImprovements
+    //   }
+    // })
+    return NextResponse.json({ analysis: parsed.Result, score: parsed.score, keyImprovements: parsed.keyImprovements });
   } catch (error) {
     console.error("Gemini error:", error);
     return NextResponse.json({ error: "Something went wrong." }, { status: 500 });

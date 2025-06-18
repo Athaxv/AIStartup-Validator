@@ -25,6 +25,6 @@ model StartupAnalysis {
   problem        String
   result         String
   score          Int
-  keyImprovements String?
+  keyImprovements String[]
   createdAt      DateTime @default(now())
 }
