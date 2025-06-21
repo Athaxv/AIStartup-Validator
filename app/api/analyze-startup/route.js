@@ -11,74 +11,189 @@ export async function POST(req) {
   const body = await req.json();
   console.log("output", body);
   const {
-    startupName,
-    pitch,
-    revenueModel,
-    industry,
-    stage,
-    description,
-    problem,
-  } = body;
+  alternativesExist,
+  biggestRisk,
+  keyFeatures,
+  oneLiner,
+  problemSolved,
+  revenueModel,
+  startupName,
+  targetAudience,
+} = body;
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  const prompt = `
-You are a startup advisor and investor. Analyze the following startup idea and provide a detailed evaluation covering:
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const prompt = `
+  You are a world-class startup investor and a seasoned entrepreneur who has successfully built multiple multi-million dollar startups. Your job is to critically evaluate a startup idea and generate a professional-grade analysis for potential investors.
 
-1. Idea originality and clarity
-2. Problem-solution fit
-3. Market potential in the mentioned industry
-4. Business model feasibility based on the revenue model
-5. Execution readiness based on the startup stage
-6. Areas of improvement or risks
+The user will provide the following details about a startup:
 
-Startup Info:
-- Name: ${startupName}
-- Pitch: ${pitch}
-- Revenue Model: ${revenueModel}
-- Industry: ${industry}
-- Current Stage: ${stage}
-- Description: ${description}
-- Problem Being Solved: ${problem}
+Startup Name: ${startupName}
 
-Your response should be in **valid JSON** using the structure below:
-\`\`\`json
+One-liner Pitch: ${oneLiner}
+
+Revenue Model: ${revenueModel}
+
+Problem Solved: ${problemSolved}
+
+Target Audience: ${targetAudience}
+
+Key Features: ${keyFeatures}
+
+Do Alternatives Exist?: ${alternativesExist}
+
+Biggest Risk/Challenge: ${biggestRisk}
+
+Analyze this startup idea as both an experienced investor and serial entrepreneur. Your analysis must be evidence-based, brutally honest, and strategic. Do not sugar-coat weak points. Think like you're risking real capital.
+
+Provide a detailed breakdown with the following outputs:
+
 {
-  "Result": "Detailed analysis of the startup based on the provided inputs. It should cover strengths, weaknesses, and a verdict.",
-  "keyImprovements": ["List of actionable improvements here", "Like refining the revenue model", "Improving clarity in pitch", "..."],
-  "score": number from 0 to 100
+  "startupName": "${startupName}",
+  "successScore": "[0-100]",
+  "marketFitAnalysis": {
+    "problemSeverity": "[Low/Medium/High]",
+    "solutionUniqueness": "[Low/Medium/High]",
+    "marketTiming": "[Too Early/Perfect Timing/Late]",
+    "scalability": "[Low/Moderate/High]"
+  },
+  "startupRadar": {
+    "innovationScore": "[0-10]",
+    "teamStrength": "[0-10]",
+    "executionRisk": "[Low/Medium/High]",
+    "fundingRequired": "$[Estimated in USD]",
+    "burnRateRisk": "[Low/Medium/High]"
+  },
+  "targetAudienceInsights": {
+    "ageRange": "[e.g., 18-30]",
+    "incomeLevel": "[Low/Middle/High]",
+    "techSavviness": "[Low/Medium/High]",
+    "educationLevel": "[Basic/College/Postgrad/Professional]"
+  },
+  "marketShareOpportunity": "[e.g., Small niche (~1%), Emerging (~5-10%), Large (>20% potential)]",
+  "competitorBenchmarking": {
+    "graph": "[Text-based bar graph or JSON array of key competitors with ratings]",
+    "topCompetitors": ["Competitor A", "Competitor B", "Competitor C"]
+  },
+  "growthOpportunityProjection": {
+    "1Year": "[Description and expected metrics]",
+    "3Years": "[Description and expected metrics]",
+    "5Years": "[Description and expected metrics]"
+  },
+  "keyRecommendations": [
+    {
+      "actionItem": "Description of what to improve",
+      "expectedImpact": "High/Medium/Low",
+      "timeFrame": "e.g., 1-3 months"
+    },
+    {
+      "actionItem": "Another improvement area",
+      "expectedImpact": "High/Medium/Low",
+      "timeFrame": "e.g., 3-6 months"
+    }
+  ]
 }
-\`\`\`
-`;
+Before analysis, validate the user input. If any section includes placeholder names (e.g., "dsffg", "asdf", "abc123", "gibberish text"), or clearly nonsensical or irrelevant words, mark the entire startup idea as invalid and assign:
 
+"successScore": "0"
 
+"reasonForRejection": "Invalid or placeholder inputs detected. Fields must contain meaningful and realistic startup data."
 
-  try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    console.log("new_Result", text);
-    const cleaned = text.replace(/```json\n?/, "").replace(/```/, "").trim();
-    const parsed = JSON.parse(cleaned);
-    console.log(parsed.Result);
-    console.log("Yhi", parsed.keyImprovements[1]) // ✅ Output: 20
+In such cases, skip the full analysis and just return the rejection message in JSON.
 
-    // await prisma.StartupAnalysis.create({
-    //   data: {
-    //     startupName,
-    //     pitch,
-    //     revenueModel,
-    //     industry,
-    //     stage,
-    //     description,
-    //     problem,
-    //     result: parsed.Result,
-    //     score: parsed.score,
-    //     keyImprovements: parsed.keyImprovements
-    //   }
-    // })
-    return NextResponse.json({ analysis: parsed.Result, score: parsed.score, keyImprovements: parsed.keyImprovements });
-  } catch (error) {
-    console.error("Gemini error:", error);
-    return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
-  }
+Keep the tone professional, sharp, and data-driven. Focus on ROI potential and practical execution risks. Assume the reader is a venture capitalist evaluating whether this idea deserves funding.
+`
+
+try {
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text();
+  console.log("new_Result", text);
+  const cleaned = text.replace(/```json\n?/, "").replace(/```/, "").trim();
+  const parsed = JSON.parse(cleaned);
+  console.log(parsed)
+  // console.log(parsed.Result);
+  // console.log("Yhi", parsed.keyImprovements[1]) // ✅ Output: 20
+
+ 
+  return NextResponse.json({ result: parsed });
+} catch (error) {
+  console.error("Gemini error:", error);
+  return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
 }
+}
+
+
+// prompt = `
+//   You are a world-class startup investor and a seasoned entrepreneur who has successfully built multiple multi-million dollar startups. Your job is to critically evaluate a startup idea and generate a professional-grade analysis for potential investors.
+
+// The user will provide the following details about a startup:
+
+// Startup Name: ${startupName}
+
+// One-liner Pitch: ${pitch}
+
+// Revenue Model: ${revenueModel}
+
+// Problem Solved: ${problem}
+
+// Target Audience: ${targetAudience}
+
+// Key Features: ${features}
+
+// Do Alternatives Exist?: ${alternatives}
+
+// Biggest Risk/Challenge: ${challenge}
+
+// Analyze this startup idea as both an experienced investor and serial entrepreneur. Your analysis must be evidence-based, brutally honest, and strategic. Do not sugar-coat weak points. Think like you're risking real capital.
+
+// Provide a detailed breakdown with the following outputs:
+
+// {
+//   "startupName": "${startupName}",
+//   "successScore": "[0-100]",
+//   "marketFitAnalysis": {
+//     "problemSeverity": "[Low/Medium/High]",
+//     "solutionUniqueness": "[Low/Medium/High]",
+//     "marketTiming": "[Too Early/Perfect Timing/Late]",
+//     "scalability": "[Low/Moderate/High]"
+//   },
+//   "startupRadar": {
+//     "innovationScore": "[0-10]",
+//     "teamStrength": "[0-10]",
+//     "executionRisk": "[Low/Medium/High]",
+//     "fundingRequired": "$[Estimated in USD]",
+//     "burnRateRisk": "[Low/Medium/High]"
+//   },
+//   "targetAudienceInsights": {
+//     "ageRange": "[e.g., 18-30]",
+//     "incomeLevel": "[Low/Middle/High]",
+//     "techSavviness": "[Low/Medium/High]",
+//     "educationLevel": "[Basic/College/Postgrad/Professional]"
+//   },
+//   "marketShareOpportunity": "[e.g., Small niche (~1%), Emerging (~5-10%), Large (>20% potential)]",
+//   "competitorBenchmarking": {
+//     "graph": "[Text-based bar graph or JSON array of key competitors with ratings]",
+//     "topCompetitors": ["Competitor A", "Competitor B", "Competitor C"]
+//   },
+//   "growthOpportunityProjection": {
+//     "1Year": "[Description and expected metrics]",
+//     "3Years": "[Description and expected metrics]",
+//     "5Years": "[Description and expected metrics]"
+//   },
+//   "keyRecommendations": [
+//     {
+//       "actionItem": "Description of what to improve",
+//       "expectedImpact": "High/Medium/Low",
+//       "timeFrame": "e.g., 1-3 months"
+//     },
+//     {
+//       "actionItem": "Another improvement area",
+//       "expectedImpact": "High/Medium/Low",
+//       "timeFrame": "e.g., 3-6 months"
+//     }
+//   ]
+// }
+
+
+// Keep the tone professional, sharp, and data-driven. Focus on ROI potential and practical execution risks. Assume the reader is a venture capitalist evaluating whether this idea deserves funding.
+// `
