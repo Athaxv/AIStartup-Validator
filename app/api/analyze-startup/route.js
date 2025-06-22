@@ -21,7 +21,7 @@ export async function POST(req) {
   targetAudience,
 } = body;
 
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 const prompt = `
   You are a world-class startup investor and a seasoned entrepreneur who has successfully built multiple multi-million dollar startups. Your job is to critically evaluate a startup idea and generate a professional-grade analysis for potential investors.
 
