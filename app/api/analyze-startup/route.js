@@ -108,14 +108,14 @@ try {
   const response = await result.response;
   const text = response.text();
   console.log("new_Result", text);
-  const cleaned = text.replace(/```json\n?/, "").replace(/```/, "").trim();
-  const parsed = JSON.parse(cleaned);
-  console.log(parsed)
+  // const cleaned = text.replace(/```json\n?/, "").replace(/```/, "").trim();
+  // const parsed = JSON.parse(cleaned);
+  // console.log(parsed)
   // console.log(parsed.Result);
   // console.log("Yhi", parsed.keyImprovements[1]) // ✅ Output: 20
 
  
-  return NextResponse.json({ result: parsed });
+  return NextResponse.json({ result: text });
 } catch (error) {
   console.error("Gemini error:", error);
   return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
