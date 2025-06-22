@@ -81,6 +81,7 @@ import {
   LineChartIcon,
 } from "lucide-react";
 import { RainbowButton } from "./magicui/rainbow-button";
+import JSON5 from 'json5';
 
 const mockGrowthData = [
   { month: "Jan", opportunity: 65, market: 45, projection: 58 },
@@ -173,6 +174,124 @@ const mockImprovements = [
   },
 ];
 
+// --- SaaS-style ImprovementCard for Key Improvements tab ---
+function ImprovementCard({ improvement }) {
+  // Priority color and icon
+  const priorityMap = {
+    High: {
+      color: 'bg-red-100 text-red-800 border-red-200',
+      icon: <AlertTriangle className="h-5 w-5 text-red-500 ml-2" />,
+      label: 'High Priority',
+    },
+    Medium: {
+      color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      icon: <Award className="h-5 w-5 text-yellow-500 ml-2" />,
+      label: 'Medium Priority',
+    },
+    Low: {
+      color: 'bg-green-100 text-green-800 border-green-200',
+      icon: <Shield className="h-5 w-5 text-green-500 ml-2" />,
+      label: 'Low Priority',
+    },
+    default: {
+      color: 'bg-gray-100 text-gray-800 border-gray-200',
+      icon: null,
+      label: 'Priority',
+    },
+  };
+  // Try to infer priority from expectedImpact if not present
+  let priority = improvement.priority ||
+    (improvement.expectedImpact === 'High' ? 'High' : improvement.expectedImpact === 'Medium' ? 'Medium' : improvement.expectedImpact === 'Low' ? 'Low' : 'default');
+  const p = priorityMap[priority] || priorityMap.default;
+  return (
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-4 transition hover:shadow-xl">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${p.color}`}>{p.label}</span>
+          {improvement.category && <span className="text-sm text-gray-500 font-medium">{improvement.category}</span>}
+        </div>
+        {p.icon}
+      </div>
+      <h3 className="text-xl font-bold text-gray-900 mb-1">{improvement.title || improvement.actionItem}</h3>
+      {improvement.description && <p className="text-gray-600 mb-4">{improvement.description}</p>}
+      {/* Action Items */}
+      {improvement.actions || improvement.actionItem ? (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2 text-blue-700 font-semibold text-sm">
+            <Brain className="h-4 w-4 mr-1 text-blue-500" />
+            Action Items
+          </div>
+          <ul className="space-y-2 ml-2">
+            {improvement.actions
+              ? improvement.actions.map((action, i) => (
+                  <li key={i} className="flex items-start gap-2 text-gray-700 text-sm">
+                    <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <span>{action}</span>
+                  </li>
+                ))
+              : (
+                <li className="flex items-start gap-2 text-gray-700 text-sm">
+                  <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <span>{improvement.actionItem}</span>
+                </li>
+              )}
+          </ul>
+        </div>
+      ) : null}
+      <div className="flex flex-wrap gap-6 border-t border-gray-100 pt-4 mt-4 text-sm">
+        {improvement.impact && (
+          <div>
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Expected Impact</div>
+            <div className="text-green-700 font-semibold">{improvement.impact}</div>
+          </div>
+        )}
+        {improvement.expectedImpact && (
+          <div>
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Expected Impact</div>
+            <div className={`font-semibold ${improvement.expectedImpact === 'High' ? 'text-green-700' : improvement.expectedImpact === 'Medium' ? 'text-yellow-700' : 'text-gray-700'}`}>{improvement.expectedImpact}</div>
+          </div>
+        )}
+        {improvement.timeframe && (
+          <div>
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Timeframe</div>
+            <div className="text-blue-700 font-semibold">{improvement.timeframe}</div>
+          </div>
+        )}
+        {improvement.timeFrame && (
+          <div>
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Timeframe</div>
+            <div className="text-blue-700 font-semibold">{improvement.timeFrame}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Modern Black & White CompetitorBar component ---
+function CompetitorBar({ name, score, maxScore = 10 }) {
+  // Score can be "7/10" or just a number
+  let numericScore = 0;
+  if (typeof score === 'string' && score.includes('/')) {
+    numericScore = parseFloat(score.split('/')[0]);
+  } else {
+    numericScore = parseFloat(score);
+  }
+  const percent = Math.max(0, Math.min(100, (numericScore / maxScore) * 100));
+  return (
+    <div className="flex items-center gap-4 py-2">
+      <span className="font-semibold text-black w-32 truncate">{name}</span>
+      <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-black to-gray-800 rounded-full transition-all"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <span className="ml-4 font-mono text-xs text-gray-700 min-w-[40px] text-right">{score}</span>
+    </div>
+  );
+}
+
 export default function StartupValidatorDashboard() {
   const [formData, setFormData] = useState({
     startupName: "",
@@ -192,6 +311,7 @@ export default function StartupValidatorDashboard() {
   const [isTyping, setIsTyping] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [activeTab, setActiveTab] = useState("market-fit");
+  const [analysisResult, setAnalysisResult] = useState(null);
 
   // Calculate form completion progress
   useEffect(() => {
@@ -217,23 +337,51 @@ export default function StartupValidatorDashboard() {
     setTimeout(() => setIsTyping(false), 1000);
   };
 
-  const handleSubmit = async () => {
-    // Save the form data
-    console.log("Saving form data:", formData);
+  function extractFirstJson(str) {
+    // Remove markdown code block markers if present
+    let cleaned = str.replace(/```json[\r\n]*/i, '').replace(/```/, '').trim();
+    // Find the first complete JSON object
+    const firstBrace = cleaned.indexOf('{');
+    if (firstBrace === -1) throw new Error('No JSON object found');
+    let depth = 0;
+    let end = -1;
+    for (let i = firstBrace; i < cleaned.length; i++) {
+      if (cleaned[i] === '{') depth++;
+      if (cleaned[i] === '}') depth--;
+      if (depth === 0) {
+        end = i + 1;
+        break;
+      }
+    }
+    if (end === -1) throw new Error('No complete JSON object found');
+    return cleaned.slice(firstBrace, end);
+  }
 
+  const handleSubmit = async () => {
     setIsLoading(true);
-    // Simulate API call
-    const res = await fetch("/api/analyze-startup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
-    const result = await res.json();
-    console.log(result);
-    setHasResults(true);
-    setIsLoading(false);
+    try {
+      const res = await fetch("/api/analyze-startup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const result = await res.json();
+      let cleaned = extractFirstJson(result.result);
+      // Remove trailing commas (optional, JSON5 can handle it)
+      // cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+      // Fix unquoted property names (optional, JSON5 can handle it)
+      // cleaned = cleaned.replace(/([,{\[]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+      console.log('CLEANED JSON:', cleaned);
+      const parsed = JSON5.parse(cleaned);
+      setAnalysisResult(parsed);
+      setHasResults(true);
+    } catch (err) {
+      setAnalysisResult({ reasonForRejection: "Could not parse AI response. Please try again or rephrase your input." });
+      setHasResults(true);
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNewIdea = () => {
@@ -360,7 +508,7 @@ export default function StartupValidatorDashboard() {
             <CardContent>
               <Skeleton className="h-[300px] w-full rounded" />
             </CardContent>
-          </Card>
+          </Card> 
         </div>
       </div>
     </div>
@@ -412,7 +560,7 @@ export default function StartupValidatorDashboard() {
                 </div>
               )}
             </div> */}
-            <RainbowButton className="bg-black" onClick={handleNewIdea}>
+            <RainbowButton className="bg-black hidden lg:flex" variant="outline" onClick={handleNewIdea}>
               <Plus className="h-4 w-4 mr-2" />
               New Idea
               <Sparkles className="h-3 w-3 ml-2" />
@@ -507,7 +655,7 @@ export default function StartupValidatorDashboard() {
                           }
                           onFocus={() => setFocusedField("startupName")}
                           onBlur={() => setFocusedField(null)}
-                          className={`border-gray-300/50 bg-white/70 transition-all duration-300 ${
+                          className={`border-gray-300/50 bg-white/70 text-black transition-all duration-300 ${
                             focusedField === "startupName"
                               ? "border-gray-900 ring-2 ring-gray-900/20 shadow-lg scale-[1.02]"
                               : "hover:border-gray-400 hover:shadow-md"
@@ -567,7 +715,7 @@ export default function StartupValidatorDashboard() {
                           }
                           onFocus={() => setFocusedField("oneLiner")}
                           onBlur={() => setFocusedField(null)}
-                          className={`border-gray-300/50 bg-white/70 transition-all duration-300 ${
+                          className={`border-gray-300/50 text-black bg-white/70 transition-all duration-300 ${
                             focusedField === "oneLiner"
                               ? "border-gray-900 ring-2 ring-gray-900/20 shadow-lg scale-[1.02]"
                               : "hover:border-gray-400 hover:shadow-md"
@@ -611,13 +759,13 @@ export default function StartupValidatorDashboard() {
                           handleInputChange("revenueModel", value)
                         }
                       >
-                        <SelectTrigger className="border-gray-300/50 bg-white/70 hover:border-gray-400 hover:shadow-md transition-all duration-300">
+                        <SelectTrigger className="border-gray-300/50 text-black bg-white/70 hover:border-gray-400 hover:shadow-md transition-all duration-300">
                           <SelectValue placeholder="Select revenue model" />
                         </SelectTrigger>
-                        <SelectContent className="bg-white/95 border-gray-200/50">
+                        <SelectContent className="bg-white/95 text-black border-gray-200/50">
                           <SelectItem
                             value="subscription"
-                            className="hover:bg-gray-50/80 transition-colors duration-200"
+                            className="hover:bg-gray-50/80 text-black transition-colors duration-200"
                           >
                             💳 Subscription (SaaS)
                           </SelectItem>
@@ -708,7 +856,7 @@ export default function StartupValidatorDashboard() {
                           }
                           onFocus={() => setFocusedField("problemSolved")}
                           onBlur={() => setFocusedField(null)}
-                          className={`border-gray-300/50 bg-white/70 min-h-[100px] transition-all duration-300 resize-none ${
+                          className={`border-gray-300/50 text-black bg-white/70 min-h-[100px] transition-all duration-300 resize-none ${
                             focusedField === "problemSolved"
                               ? "border-gray-900 ring-2 ring-gray-900/20 shadow-lg scale-[1.02]"
                               : "hover:border-gray-400 hover:shadow-md"
@@ -770,7 +918,7 @@ export default function StartupValidatorDashboard() {
                           }
                           onFocus={() => setFocusedField("targetAudience")}
                           onBlur={() => setFocusedField(null)}
-                          className={`border-gray-300/50 bg-white/70 min-h-[100px] transition-all duration-300 resize-none ${
+                          className={`border-gray-300/50 text-black bg-white/70 min-h-[100px] transition-all duration-300 resize-none ${
                             focusedField === "targetAudience"
                               ? "border-gray-900 ring-2 ring-gray-900/20 shadow-lg scale-[1.02]"
                               : "hover:border-gray-400 hover:shadow-md"
@@ -831,7 +979,7 @@ export default function StartupValidatorDashboard() {
                           }
                           onFocus={() => setFocusedField("keyFeatures")}
                           onBlur={() => setFocusedField(null)}
-                          className={`border-gray-300/50 bg-white/70 min-h-[100px] transition-all duration-300 resize-none ${
+                          className={`border-gray-300/50 text-black bg-white/70 min-h-[100px] transition-all duration-300 resize-none ${
                             focusedField === "keyFeatures"
                               ? "border-gray-900 ring-2 ring-gray-900/20 shadow-lg scale-[1.02]"
                               : "hover:border-gray-400 hover:shadow-md"
@@ -888,10 +1036,10 @@ export default function StartupValidatorDashboard() {
                           handleInputChange("alternativesExist", value)
                         }
                       >
-                        <SelectTrigger className="border-gray-300/50 bg-white/70 hover:border-gray-400 hover:shadow-md transition-all duration-300">
+                        <SelectTrigger className="border-gray-300/50 text-black bg-white/70 hover:border-gray-400 hover:shadow-md transition-all duration-300">
                           <SelectValue placeholder="Select option" />
                         </SelectTrigger>
-                        <SelectContent className="bg-white/95 border-gray-200/50">
+                        <SelectContent className="bg-white/95 text-black border-gray-200/50">
                           <SelectItem
                             value="none"
                             className="hover:bg-green-50/80 transition-colors duration-200"
@@ -955,7 +1103,7 @@ export default function StartupValidatorDashboard() {
                           }
                           onFocus={() => setFocusedField("biggestRisk")}
                           onBlur={() => setFocusedField(null)}
-                          className={`border-gray-300/50 bg-white/70 min-h-[100px] transition-all duration-300 resize-none ${
+                          className={`border-gray-300/50 text-black bg-white/70 min-h-[100px] transition-all duration-300 resize-none ${
                             focusedField === "biggestRisk"
                               ? "border-gray-900 ring-2 ring-gray-900/20 shadow-lg scale-[1.02]"
                               : "hover:border-gray-400 hover:shadow-md"
@@ -1053,34 +1201,33 @@ export default function StartupValidatorDashboard() {
           </div>
 
           {/* Right Panel - Results (60% on desktop) */}
-          <div className="flex-1 bg-gradient-to-b from-white to-gray-50/30">
-            <ScrollArea className="h-full">
-              <div className="p-4 sm:p-6 md:p-8">
+          <div
+            className="flex-1 bg-gradient-to-b from-white to-gray-50/30 w-full min-w-0 max-w-full lg:max-w-[60vw] xl:max-w-[70vw] 2xl:max-w-[80vw] flex flex-col"
+          >
+            <ScrollArea className="h-full w-full px-2 sm:px-4 md:px-6 lg:px-8 xl:px-12">
+              <div className="p-2 sm:p-4 md:p-6 lg:p-6 xl:p-8">
                 {isLoading ? (
                   <SkeletonLoader />
                 ) : !hasResults ? (
-                  <div className="flex items-center justify-center h-full min-h-[500px]">
-                    <div className="text-center space-y-8 max-w-lg">
+                  <div className="flex items-center justify-center h-full min-h-[400px] sm:min-h-[500px]">
+                    <div className="text-center space-y-8 max-w-lg w-full">
                       <div className="relative">
-                        <div className="w-32 h-32 mx-auto bg-gradient-to-br from-gray-100 via-white to-gray-200 rounded-3xl flex items-center justify-center shadow-2xl">
-                          <BarChart3 className="h-16 w-16 text-gray-400" />
+                        <div className="w-24 h-24 sm:w-32 sm:h-32 mx-auto bg-gradient-to-br from-gray-100 via-white to-gray-200 rounded-3xl flex items-center justify-center shadow-2xl">
+                          <BarChart3 className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400" />
                         </div>
-                        {/* <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                          <Sparkles className="h-5 w-5 text-white" />
-                        </div> */}
                       </div>
                       <div className="space-y-4">
                         <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">
-  Ready for AI Analysis
-</h3>
-                        <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
+                          Ready for AI Analysis
+                        </h3>
+                        <p className="text-gray-600 leading-relaxed text-base sm:text-lg">
                           Complete the startup details on the left panel and
                           click "Validate Startup Idea" to receive comprehensive
                           AI-powered insights, competitive analysis, and
                           actionable recommendations.
                         </p>
                       </div>
-                      <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
+                      <div className="flex items-center justify-center space-x-4 text-xs sm:text-sm text-gray-500">
                         <div className="flex space-x-1">
                           {[...Array(3)].map((_, i) => (
                             <div
@@ -1098,651 +1245,514 @@ export default function StartupValidatorDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-8">
-                    {/* Header */}
-                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                      <div className="space-y-3">
-                        <h2 className="text-4xl font-bold text-gray-900 flex items-center">
-                          {formData.startupName || "Your Startup"}
-                          <CheckCircle2 className="h-8 w-8 ml-4 text-green-600" />
-                        </h2>
-                        <p className="text-gray-600 text-xl leading-relaxed max-w-2xl">
-                          {formData.oneLiner}
-                        </p>
-                        <div className="flex items-center space-x-3 mt-4">
-                          <Badge className="bg-gray-900/10 text-gray-900 hover:bg-gray-900/20 transition-colors duration-300 px-3 py-1">
-                            {formData.revenueModel || "Revenue Model"}
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="border-green-300 text-green-700 bg-green-50 px-3 py-1"
-                          >
-                            ✨ AI Analyzed
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="border-blue-300 text-blue-700 bg-blue-50 px-3 py-1"
-                          >
-                            🚀 Ready to Launch
-                          </Badge>
-                        </div>
+                    {/* Handle API rejection */}
+                    {analysisResult?.reasonForRejection ? (
+                      <div className="flex flex-col items-center justify-center min-h-[300px] text-center space-y-6">
+                        <XCircle className="h-12 w-12 text-red-500 mx-auto" />
+                        <h2 className="text-2xl font-bold text-red-700">Submission Rejected</h2>
+                        <p className="text-gray-700 text-lg">{analysisResult.reasonForRejection}</p>
+                        <Button onClick={handleNewIdea} className="mt-4">Try Another Idea</Button>
                       </div>
-                      <Button
-                        onClick={handleSubmit}
-                        variant="outline"
-                        className="border-gray-300 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
-                      >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Revalidate Idea
-                      </Button>
-                    </div>
-
-                    {/* Success Score */}
-                    <Card className="w-full max-w-full border-gray-200/40 shadow-xl bg-gradient-to-br from-white via-gray-50/30 to-white">
-                      <CardHeader className="pb-3">
+                    ) : (
+                      <>
+                        {/* Header */}
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-2xl text-gray-900 flex items-center">
-                            <div className="w-10 h-10 bg-gradient-to-r from-gray-900 to-gray-700 rounded-xl flex items-center justify-center mr-4 shadow-lg">
-                              <TrendingUp className="h-5 w-5 text-white" />
-                            </div>
-                            Startup Success Score
-                          </CardTitle>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors duration-300" />
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-0 shadow-xl">
-                              <p>
-                                AI-calculated viability score based on market
-                                fit, competition, and growth potential
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center space-x-8">
-                          <div className="text-6xl -translate-y-4 font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent">
-                            84
-                          </div>
-                          <div className="flex-1 space-y-4">
-                            <Progress value={84} className="h-6 bg-gray-100" />
-                            <div className="flex justify-between text-sm text-gray-500">
-                              <span className="flex items-center">
-                                <XCircle className="h-4 w-4 mr-1 text-red-500" />
-                                Poor
-                              </span>
-                              <span className="flex items-center">
-                                <CheckCircle2 className="h-4 w-4 mr-1 text-green-500" />
-                                Excellent
-                              </span>
-                            </div>
-                          </div>
-                          <Badge className="bg-gradient-to-r font-bold from-green-500 to-green-600 -translate-y-4.5 text-white shadow-lg rounded-lg px-2 text-sm">
-                            Strong Potential
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Analysis Tabs */}
-                    <Tabs
-                      value={activeTab}
-                      onValueChange={setActiveTab}
-                      className="space-y-6"
-                    >
-                      <TabsList className="grid w-full grid-cols-5 bg-gray-100/80  shadow-md">
-                        {[
-                          {
-                            value: "market-fit",
-                            label: "Market Fit",
-                            icon: Target,
-                          },
-                          { value: "audience", label: "Audience", icon: Users },
-                          {
-                            value: "competitors",
-                            label: "Competitors",
-                            icon: BarChart3,
-                          },
-                          {
-                            value: "growth",
-                            label: "Growth",
-                            icon: TrendingUp,
-                          },
-                          {
-                            value: "improvements",
-                            label: "Key Improvements",
-                            icon: Rocket,
-                          },
-                        ].map((tab) => (
-                          <TabsTrigger
-                            key={tab.value}
-                            value={tab.value}
-                            className="data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300 flex items-center space-x-2"
-                          >
-                            <tab.icon className="h-4 w-4" />
-                            <span className="hidden sm:inline">
-                              {tab.label}
-                            </span>
-                          </TabsTrigger>
-                        ))}
-                      </TabsList>
-
-                      <TabsContent value="market-fit" className="space-y-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          <Card className="border-gray-200/40 shadow-lg bg-white/90">
-                            <CardHeader>
-                              <CardTitle className="text-lg text-gray-900 flex items-center">
-                                <Target className="h-5 w-5 mr-2 text-red-500" />
-                                Market Fit Analysis
-                              </CardTitle>
-                              <CardDescription>
-                                AI assessment of how well your solution fits
-                                current market needs
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                              <div  className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {[
-                                  {
-                                    label: "Problem Severity",
-                                    value: 88,
-                                    color: "red",
-                                    status: "High",
-                                    desc: "Critical market need identified",
-                                  },
-                                  {
-                                    label: "Solution Uniqueness",
-                                    value: 68,
-                                    color: "yellow",
-                                    status: "Medium",
-                                    desc: "Some differentiation present",
-                                  },
-                                  {
-                                    label: "Market Timing",
-                                    value: 94,
-                                    color: "green",
-                                    status: "Excellent",
-                                    desc: "Perfect market conditions",
-                                  },
-                                  {
-                                    label: "Scalability",
-                                    value: 82,
-                                    color: "blue",
-                                    status: "High",
-                                    desc: "Strong growth potential",
-                                  },
-                                ].map((item) => (
-                                  <div key={item.label} className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-sm text-gray-600 font-medium">
-                                        {item.label}
-                                      </span>
-                                      <Badge
-                                        className={`${
-                                          item.color === "red"
-                                            ? "bg-red-100 text-red-800"
-                                            : item.color === "yellow"
-                                            ? "bg-yellow-100 text-yellow-800"
-                                            : item.color === "green"
-                                            ? "bg-green-100 text-green-800"
-                                            : "bg-blue-100 text-blue-800"
-                                        }`}
-                                      >
-                                        {item.status}
-                                      </Badge>
-                                    </div>
-                                    <Progress
-                                      value={item.value}
-                                      className={`h-3 ${
-                                        item.color === "red"
-                                          ? "bg-red-50"
-                                          : item.color === "yellow"
-                                          ? "bg-yellow-50"
-                                          : item.color === "green"
-                                          ? "bg-green-50"
-                                          : "bg-blue-50"
-                                      }`}
-                                    />
-                                    <div className="text-xs text-gray-500">
-                                      {item.desc}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          <Card className="border-gray-200/40 shadow-lg bg-white/90">
-                            <CardHeader>
-                              <CardTitle className="text-lg text-gray-900 flex items-center">
-                                <Activity className="h-5 w-5 mr-2 text-purple-500" />
-                                Startup Radar Analysis
-                              </CardTitle>
-                              <CardDescription>
-                                Multi-dimensional assessment of your startup's
-                                strengths
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className={"-translate-x-20"}>
-                              <ChartContainer
-                                config={{
-                                  A: {
-                                    label: "Score",
-                                    color: "#8d354a",
-                                  },
-                                }}
-                                className="h-[300px]"
+                          <div className="space-y-3">
+                            <h2 className="text-4xl font-bold text-gray-900 flex items-center">
+                              {analysisResult?.startupName || formData.startupName || "Your Startup"}
+                              <CheckCircle2 className="h-8 w-8 ml-4 text-green-600" />
+                            </h2>
+                            <p className="text-gray-600 text-xl leading-relaxed max-w-2xl">
+                              {analysisResult?.oneLiner || formData.oneLiner}
+                            </p>
+                            <div className="flex items-center space-x-3 mt-4">
+                              <Badge className="bg-gray-900/10 text-gray-900 hover:bg-gray-900/20 transition-colors duration-300 px-3 py-1">
+                                {analysisResult?.revenueModel || formData.revenueModel || "Revenue Model"}
+                              </Badge>
+                              <Badge
+                                variant="outline"
+                                className="border-green-300 text-green-700 bg-green-50 px-3 py-1"
                               >
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <RadarChart data={mockRadarData}>
-                                    <PolarGrid />
-                                    <PolarAngleAxis
-                                      dataKey="subject"
-                                      className="text-xs"
-                                    />
-                                    <PolarRadiusAxis
-                                      angle={90}
-                                      domain={[0, 100]}
-                                      className="text-xs"
-                                    />
-                                    <Radar
-                                      name="Score"
-                                      dataKey="A"
-                                      stroke="#943346"
-                                      fill="#bc4376"
-                                      fillOpacity={0.1}
-                                      strokeWidth={2}
-                                    />
-                                    <ChartTooltip
-                                      content={<ChartTooltipContent />}
-                                    />
-                                  </RadarChart>
-                                </ResponsiveContainer>
-                              </ChartContainer>
-                            </CardContent>
-                          </Card>
+                                ✨ AI Analyzed
+                              </Badge>
+                              <Badge
+                                variant="outline"
+                                className="border-blue-300 text-blue-700 bg-blue-50 px-3 py-1"
+                              >
+                                🚀 Ready to Launch
+                              </Badge>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={handleSubmit}
+                            variant="outline"
+                            className="border-gray-300 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Revalidate Idea
+                          </Button>
                         </div>
-                      </TabsContent>
 
-                      <TabsContent value="audience" className="space-y-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          <Card className="border-gray-200/40 shadow-lg bg-white/90">
-                            <CardHeader>
-                              <CardTitle className="text-lg text-gray-900 flex items-center">
-                                <Users className="h-5 w-5 mr-2 text-blue-500" />
-                                Target Audience Insights
+                        {/* Success Score */}
+                        <Card className="border-gray-200/40 shadow-xl bg-gradient-to-br from-white via-gray-50/30 to-white">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-2xl text-gray-900 flex items-center">
+                                <div className="w-10 h-10 bg-gradient-to-r from-gray-900 to-gray-700 rounded-xl flex items-center justify-center mr-4 shadow-lg">
+                                  <TrendingUp className="h-5 w-5 text-white" />
+                                </div>
+                                Startup Success Score
                               </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                              <div className="space-y-4">
-                                <h4 className="font-semibold text-gray-900">
-                                  Demographics
-                                </h4>
-                                <div className="space-y-3 text-sm">
-                                  {[
-                                    {
-                                      label: "Age Range",
-                                      value: "25-45 years",
-                                    },
-                                    {
-                                      label: "Income Level",
-                                      value: "$50K-$150K",
-                                    },
-                                    {
-                                      label: "Tech Savviness",
-                                      value: "High",
-                                      badge: true,
-                                    },
-                                    {
-                                      label: "Education",
-                                      value: "College+",
-                                      badge: true,
-                                    },
-                                  ].map((item) => (
-                                    <div
-                                      key={item.label}
-                                      className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-                                    >
-                                      <span className="text-gray-600">
-                                        {item.label}
-                                      </span>
-                                      {item.badge ? (
-                                        <Badge className="bg-green-100 text-green-800">
-                                          {item.value}
-                                        </Badge>
-                                      ) : (
-                                        <span className="font-medium">
-                                          {item.value}
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Info className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors duration-300" />
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-0 shadow-xl">
+                                  <p>
+                                    AI-calculated viability score based on market
+                                    fit, competition, and growth potential
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex items-center space-x-8">
+                              <div className="text-6xl -translate-y-4 font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent">
+                                {analysisResult?.successScore ?? '--'}
+                              </div>
+                              <div className="flex-1 space-y-4">
+                                <Progress value={Number(analysisResult?.successScore) || 0} className="h-6 bg-gray-100" />
+                                <div className="flex justify-between text-sm text-gray-500">
+                                  <span className="flex items-center">
+                                    <XCircle className="h-4 w-4 mr-1 text-red-500" />
+                                    Poor
+                                  </span>
+                                  <span className="flex items-center">
+                                    <CheckCircle2 className="h-4 w-4 mr-1 text-green-500" />
+                                    Excellent
+                                  </span>
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
-
-                          <Card className="border-gray-200/40 shadow-lg bg-white/90">
-                            <CardHeader>
-                              <CardTitle className="text-lg text-gray-900 flex items-center">
-                                <PieChartIcon className="h-5 w-5 mr-2 text-green-500" />
-                                Market Share Opportunity
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <ChartContainer
-                                config={{
-                                  value: {
-                                    label: "Market Share",
-                                    color: "#a51f1f",
-                                  },
-                                }}
-                                className="h-[300px]"
-                              >
-                                <ResponsiveContainer
-                                  className={"-translate-x-20"}
-                                  width="100%"
-                                  height="100%"
-                                >
-                                  <PieChart>
-                                    <Pie
-                                      data={mockMarketShareData}
-                                      cx="50%"
-                                      cy="50%"
-                                      innerRadius={50}
-                                      outerRadius={100}
-                                      paddingAngle={2}
-                                      dataKey="value"
-                                    >
-                                      {mockMarketShareData.map(
-                                        (entry, index) => (
-                                          <Cell
-                                            key={`cell-${index}`}
-                                            fill={entry.color}
-                                          />
-                                        )
-                                      )}
-                                    </Pie>
-                                    <ChartTooltip
-                                      content={<ChartTooltipContent />}
-                                    />
-                                  </PieChart>
-                                </ResponsiveContainer>
-                              </ChartContainer>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="competitors" className="space-y-6">
-                        <Card className="border-gray-200/40 shadow-lg bg-white/90">
-                          <CardHeader>
-                            <CardTitle className="text-lg text-gray-900 flex items-center">
-                              <BarChart3 className="h-5 w-5 mr-2 text-purple-500" />
-                              Competitor Benchmarking
-                            </CardTitle>
-                            <CardDescription>
-                              Competitive landscape analysis with strength
-                              scores
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <ChartContainer
-                              config={{
-                                score: {
-                                  label: "Competitive Strength",
-                                  color: "#000000",
-                                },
-                              }}
-                              className="h-[300px]"
-                            >
-                              <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                  data={mockCompetitorData}
-                                  margin={{
-                                    top: 20,
-                                    right: 30,
-                                    left: 20,
-                                    bottom: 5,
-                                  }}
-                                >
-                                  <XAxis dataKey="name" className="text-xs" />
-                                  <YAxis className="text-xs" />
-                                  <ChartTooltip
-                                    content={<ChartTooltipContent />}
-                                  />
-                                  <Bar dataKey="score" radius={[8, 8, 0, 0]}>
-                                    {mockCompetitorData.map((entry, index) => (
-                                      <Cell
-                                        key={`cell-${index}`}
-                                        fill={entry.color}
-                                      />
-                                    ))}
-                                  </Bar>
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </ChartContainer>
+                              <Badge className="bg-gradient-to-r font-bold from-green-500 to-green-600 -translate-y-4.5 text-white shadow-lg rounded-lg px-2 text-sm">
+                                {Number(analysisResult?.successScore) >= 80 ? 'Strong Potential' : Number(analysisResult?.successScore) >= 60 ? 'Good' : 'Needs Work'}
+                              </Badge>
+                            </div>
                           </CardContent>
                         </Card>
-                      </TabsContent>
 
-                      <TabsContent value="growth" className="space-y-6">
-                        <Card className="border-gray-200/40 shadow-lg bg-white/90">
-                          <CardHeader>
-                            <CardTitle className="text-lg text-gray-900 flex items-center">
-                              <LineChartIcon className="h-5 w-5 mr-2 text-green-500" />
-                              Growth Opportunity Projection
-                            </CardTitle>
-                            <CardDescription>
-                              6-month market opportunity and growth trends
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <ChartContainer
-                              config={{
-                                opportunity: {
-                                  label: "Growth Opportunity",
-                                  color: "#c81e1e",
-                                },
-                                market: {
-                                  label: "Market Trend",
-                                  color: "#c91f85",
-                                },
-                                projection: {
-                                  label: "AI Projection",
-                                  color: "#d92ecb",
-                                },
-                              }}
-                              className="h-[300px]"
-                            >
-                              <ResponsiveContainer width="100%" height="100%">
-                                <LineChart
-                                  data={mockGrowthData}
-                                  margin={{
-                                    top: 20,
-                                    right: 30,
-                                    left: 20,
-                                    bottom: 5,
-                                  }}
-                                >
-                                  <XAxis dataKey="month" className="text-xs" />
-                                  <YAxis className="text-xs" />
-                                  <ChartTooltip
-                                    content={<ChartTooltipContent />}
-                                  />
-                                  <Line
-                                    type="monotone"
-                                    dataKey="opportunity"
-                                    stroke="#000000"
-                                    strokeWidth={3}
-                                    dot={{
-                                      fill: "#000000",
-                                      strokeWidth: 2,
-                                      r: 5,
-                                    }}
-                                    activeDot={{
-                                      r: 8,
-                                      stroke: "#000000",
-                                      strokeWidth: 2,
-                                    }}
-                                  />
-                                  <Line
-                                    type="monotone"
-                                    dataKey="market"
-                                    stroke="#6b7280"
-                                    strokeWidth={2}
-                                    strokeDasharray="5 5"
-                                    dot={{
-                                      fill: "#6b7280",
-                                      strokeWidth: 2,
-                                      r: 4,
-                                    }}
-                                  />
-                                  <Line
-                                    type="monotone"
-                                    dataKey="projection"
-                                    stroke="#3b82f6"
-                                    strokeWidth={2}
-                                    strokeDasharray="3 3"
-                                    dot={{
-                                      fill: "#3b82f6",
-                                      strokeWidth: 2,
-                                      r: 4,
-                                    }}
-                                  />
-                                </LineChart>
-                              </ResponsiveContainer>
-                            </ChartContainer>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-
-                      <TabsContent value="improvements" className="space-y-6">
-                        <div className="space-y-6">
-                          <div className="text-center space-y-2">
-                            <h3 className="text-2xl font-bold text-gray-900 flex items-center justify-center">
-                              <Rocket className="h-6 w-6 mr-2 text-blue-500" />
-                              Key Improvements & Recommendations
-                            </h3>
-                            <p className="text-gray-600">
-                              AI-powered actionable insights to enhance your
-                              startup's success potential
-                            </p>
-                          </div>
-
-                          <div className="grid gap-4">
-                            {mockImprovements.map((improvement, index) => (
-                              <Card
-                                key={index}
-                                className="border-gray-200/40 shadow-lg bg-white/90"
+                        {/* Analysis Tabs */}
+                        <Tabs
+                          value={activeTab}
+                          onValueChange={setActiveTab}
+                          className="space-y-6"
+                        >
+                          <TabsList className="grid w-full grid-cols-5 bg-gray-100/80  shadow-md">
+                            {[
+                              {
+                                value: "market-fit",
+                                label: "Market Fit",
+                                icon: Target,
+                              },
+                              { value: "audience", label: "Audience", icon: Users },
+                              {
+                                value: "competitors",
+                                label: "Competitors",
+                                icon: BarChart3,
+                              },
+                              {
+                                value: "growth",
+                                label: "Growth",
+                                icon: TrendingUp,
+                              },
+                              {
+                                value: "improvements",
+                                label: "Key Improvements",
+                                icon: Rocket,
+                              },
+                            ].map((tab) => (
+                              <TabsTrigger
+                                key={tab.value}
+                                value={tab.value}
+                                className="data-[state=active]:bg-white data-[state=active]:shadow-md transition-all duration-300 flex items-center space-x-2"
                               >
+                                <tab.icon className="h-4 w-4" />
+                                <span className="hidden sm:inline">
+                                  {tab.label}
+                                </span>
+                              </TabsTrigger>
+                            ))}
+                          </TabsList>
+
+                          {/* Market Fit Tab */}
+                          <TabsContent value="market-fit" className="space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              <Card className="border-gray-200/40 shadow-lg bg-white/90">
                                 <CardHeader>
-                                  <div className="flex items-start justify-between">
-                                    <div className="space-y-2">
-                                      <div className="flex items-center space-x-3">
-                                        <Badge
-                                          className={`${getPriorityColor(
-                                            improvement.priority
-                                          )} font-medium`}
-                                        >
-                                          {improvement.priority} Priority
-                                        </Badge>
-                                        <span className="text-sm text-gray-500 font-medium">
-                                          {improvement.category}
-                                        </span>
-                                      </div>
-                                      <CardTitle className="text-lg text-gray-900">
-                                        {improvement.title}
-                                      </CardTitle>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      {improvement.priority === "High" && (
-                                        <AlertTriangle className="h-5 w-5 text-red-500" />
-                                      )}
-                                      {improvement.priority === "Medium" && (
-                                        <Award className="h-5 w-5 text-yellow-500" />
-                                      )}
-                                      {improvement.priority === "Low" && (
-                                        <Shield className="h-5 w-5 text-green-500" />
-                                      )}
-                                    </div>
-                                  </div>
+                                  <CardTitle className="text-lg text-gray-900 flex items-center">
+                                    <Target className="h-5 w-5 mr-2 text-red-500" />
+                                    Market Fit Analysis
+                                  </CardTitle>
+                                  <CardDescription>
+                                    AI assessment of how well your solution fits
+                                    current market needs
+                                  </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                  <p className="text-gray-600 leading-relaxed">
-                                    {improvement.description}
-                                  </p>
-
-                                  <div className="space-y-4">
-                                    <h4 className="font-semibold text-gray-900 flex items-center">
-                                      <Brain className="h-4 w-4 mr-2 text-blue-500" />
-                                      Action Items
-                                    </h4>
-                                    <ul className="space-y-2">
-                                      {improvement.actions.map(
-                                        (action, actionIndex) => (
-                                          <li
-                                            key={actionIndex}
-                                            className="flex items-start space-x-3 text-sm text-gray-600"
-                                          >
-                                            <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                                            <span>{action}</span>
-                                          </li>
-                                        )
-                                      )}
-                                    </ul>
+                                  <div className="grid grid-cols-1 gap-6">
+                                    {analysisResult?.marketFitAnalysis ? (
+                                      [
+                                        {
+                                          label: "Problem Severity",
+                                          value: analysisResult.marketFitAnalysis.problemSeverity,
+                                          color: "red",
+                                          desc: "Critical market need identified",
+                                        },
+                                        {
+                                          label: "Solution Uniqueness",
+                                          value: analysisResult.marketFitAnalysis.solutionUniqueness,
+                                          color: "yellow",
+                                          desc: "Some differentiation present",
+                                        },
+                                        {
+                                          label: "Market Timing",
+                                          value: analysisResult.marketFitAnalysis.marketTiming,
+                                          color: "green",
+                                          desc: "Market timing assessment",
+                                        },
+                                        {
+                                          label: "Scalability",
+                                          value: analysisResult.marketFitAnalysis.scalability,
+                                          color: "blue",
+                                          desc: "Growth potential assessment",
+                                        },
+                                      ].map((item) => (
+                                        <div key={item.label} className="space-y-3">
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-600 font-medium">
+                                              {item.label}
+                                            </span>
+                                            <Badge
+                                              className={`$ {
+                                                item.color === "red"
+                                                  ? "bg-red-100 text-red-800"
+                                                  : item.color === "yellow"
+                                                  ? "bg-yellow-100 text-yellow-800"
+                                                  : item.color === "green"
+                                                  ? "bg-green-100 text-green-800"
+                                                  : "bg-blue-100 text-blue-800"
+                                              }`}
+                                            >
+                                              {item.value}
+                                            </Badge>
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            {item.desc}
+                                          </div>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <div className="text-gray-400 text-sm">No market fit analysis available.</div>
+                                    )}
                                   </div>
+                                </CardContent>
+                              </Card>
 
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                                    <div className="space-y-1">
-                                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                        Expected Impact
-                                      </div>
-                                      <div className="text-sm font-medium text-green-600">
-                                        {improvement.impact}
-                                      </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                        Timeframe
-                                      </div>
-                                      <div className="text-sm font-medium text-blue-600">
-                                        {improvement.timeframe}
-                                      </div>
+                              {/* Radar Chart Card */}
+                              <Card className="border-gray-200/40 shadow-lg bg-white/90">
+                                <CardHeader>
+                                  <CardTitle className="text-lg text-gray-900 flex items-center">
+                                    <Activity className="h-5 w-5 mr-2 text-purple-500" />
+                                    Startup Radar Analysis
+                                  </CardTitle>
+                                  <CardDescription>
+                                    Multi-dimensional assessment of your startup's
+                                    strengths
+                                  </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                  {(() => {
+                                    // Accepts both array and object for radar data
+                                    let radarData = [];
+                                    if (Array.isArray(analysisResult?.startupRadar)) {
+                                      radarData = analysisResult.startupRadar;
+                                    } else if (typeof analysisResult?.startupRadar === 'object' && analysisResult?.startupRadar !== null) {
+                                      radarData = Object.entries(analysisResult.startupRadar).map(([key, value]) => ({ subject: key, A: typeof value === 'number' ? value : parseFloat(value) || 0, fullMark: 10 }));
+                                    }
+                                    if (radarData.length > 0) {
+                                      return (
+                                        <ChartContainer
+                                          config={Object.fromEntries(radarData.map(d => [d.subject, { label: d.subject, color: '#943346' }]))}
+                                          className="h-[300px]"
+                                        >
+                                          <ResponsiveContainer width="100%" height="100%">
+                                            <RadarChart data={radarData}>
+                                              <PolarGrid />
+                                              <PolarAngleAxis dataKey="subject" className="text-xs" />
+                                              <PolarRadiusAxis angle={90} domain={[0, 10]} className="text-xs" />
+                                              <Radar name="Score" dataKey="A" stroke="#943346" fill="#bc4376" fillOpacity={0.1} strokeWidth={2} />
+                                              <ChartTooltip content={<ChartTooltipContent />} />
+                                            </RadarChart>
+                                          </ResponsiveContainer>
+                                        </ChartContainer>
+                                      );
+                                    }
+                                    return <div className="text-gray-400 text-sm">No radar analysis available.</div>;
+                                  })()}
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </TabsContent>
+
+                          {/* Audience Tab */}
+                          <TabsContent value="audience" className="space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              <Card className="border-gray-200/40 shadow-lg bg-white/90">
+                                <CardHeader>
+                                  <CardTitle className="text-lg text-gray-900 flex items-center">
+                                    <Users className="h-5 w-5 mr-2 text-blue-500" />
+                                    Target Audience Insights
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                  <div className="space-y-4">
+                                    <h4 className="font-semibold text-gray-900">
+                                      Demographics
+                                    </h4>
+                                    <div className="space-y-3 text-sm">
+                                      {analysisResult?.targetAudienceInsights ? (
+                                        [
+                                          { label: "Age Range", value: analysisResult.targetAudienceInsights.ageRange },
+                                          { label: "Income Level", value: analysisResult.targetAudienceInsights.incomeLevel },
+                                          { label: "Tech Savviness", value: analysisResult.targetAudienceInsights.techSavviness, badge: true },
+                                          { label: "Education", value: analysisResult.targetAudienceInsights.educationLevel, badge: true },
+                                        ].map((item) => (
+                                          <div key={item.label} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                            <span className="text-gray-600">{item.label}</span>
+                                            {item.badge ? (
+                                              <Badge className="bg-green-100 text-green-800">{item.value}</Badge>
+                                            ) : (
+                                              <span className="font-medium">{item.value}</span>
+                                            )}
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-gray-400 text-sm">No audience insights available.</div>
+                                      )}
                                     </div>
                                   </div>
                                 </CardContent>
                               </Card>
-                            ))}
-                          </div>
 
-                          <Card className="border-gray-200/40 shadow-lg bg-gradient-to-r from-blue-50 to-purple-50">
-                            <CardContent className="p-6">
-                              <div className="text-center space-y-4">
-                                <div className="flex items-center justify-center space-x-2">
-                                  <Sparkles className="h-6 w-6 text-blue-500" />
-                                  <h4 className="text-lg font-semibold text-gray-900">
-                                    Next Steps
-                                  </h4>
+                              {/* Market Share Opportunity */}
+                              <Card className="border-gray-200/40 shadow-lg bg-white/90">
+                                <CardHeader>
+                                  <CardTitle className="text-lg text-gray-900 flex items-center">
+                                    <PieChartIcon className="h-5 w-5 mr-2 text-green-500" />
+                                    Market Share Opportunity
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  {(() => {
+                                    // Try to parse the marketShareOpportunity string into chart data
+                                    let data = [];
+                                    if (analysisResult?.marketShareOpportunity) {
+                                      // Example expected: "Your Opportunity: 25% | Direct Competitors: 35% | Indirect Competitors: 25% | Untapped Market: 15%"
+                                      const colorPalette = [
+                                        '#000000', '#374151', '#6b7280', '#d1d5db', '#10b981', '#6366f1', '#f59e42', '#f43f5e'
+                                      ];
+                                      data = analysisResult.marketShareOpportunity.split('|').map((item, i) => {
+                                        const match = item.match(/(.+?):\s*(\d+)%/);
+                                        if (match) {
+                                          return {
+                                            name: match[1].trim(),
+                                            value: parseInt(match[2], 10),
+                                            color: colorPalette[i % colorPalette.length],
+                                          };
+                                        }
+                                        return null;
+                                      }).filter(Boolean);
+                                    }
+                                    if (data.length > 0) {
+                                      return (
+                                        <ChartContainer
+                                          config={Object.fromEntries(data.map(d => [d.name, { label: d.name, color: d.color }]))}
+                                          className="h-64"
+                                        >
+                                          <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                              <Pie
+                                                data={data}
+                                                dataKey="value"
+                                                nameKey="name"
+                                                cx="50%"
+                                                cy="50%"
+                                                outerRadius={80}
+                                                label={({ name, percent }) => `${name} (${Math.round(percent * 100)}%)`}
+                                              >
+                                                {data.map((entry, idx) => (
+                                                  <Cell key={`cell-${idx}`} fill={entry.color} />
+                                                ))}
+                                              </Pie>
+                                              <ChartTooltip content={<ChartTooltipContent />} />
+                                            </PieChart>
+                                          </ResponsiveContainer>
+                                          <div className="flex flex-wrap justify-center gap-4 mt-4">
+                                            {data.map((entry, idx) => (
+                                              <span key={entry.name} className="flex items-center gap-2 text-xs">
+                                                <span className="inline-block w-3 h-3 rounded-full" style={{ background: entry.color }}></span>
+                                                {entry.name}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </ChartContainer>
+                                      );
+                                    }
+                                    return <div className="text-gray-400 text-sm">No market share data.</div>;
+                                  })()}
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </TabsContent>
+
+                          {/* Competitors Tab */}
+                          <TabsContent value="competitors" className="space-y-6">
+                            <Card className="border-gray-200/40 shadow-lg bg-white/90">
+                              <CardHeader>
+                                <CardTitle className="text-lg text-gray-900 flex items-center">
+                                  <BarChart3 className="h-5 w-5 mr-2 text-purple-500" />
+                                  Competitor Benchmarking
+                                </CardTitle>
+                                <CardDescription>
+                                  Competitive landscape analysis with strength scores
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                {(() => {
+                                  let competitors = [];
+                                  if (analysisResult?.competitorBenchmarking?.graph) {
+                                    // Try to parse: "Competitor A (7/10) | Competitor B (6/10) | ..."
+                                    const parts = analysisResult.competitorBenchmarking.graph.split('|').map(s => s.trim()).filter(Boolean);
+                                    competitors = parts.map(str => {
+                                      const match = str.match(/(.+?)\s*\((\d+\/?\d*)\)/);
+                                      if (match) {
+                                        // Support both "7/10" and "7"
+                                        let score = match[2].includes('/') ? (parseFloat(match[2].split('/')[0]) / parseFloat(match[2].split('/')[1] || 10)) * 10 : parseFloat(match[2]);
+                                        return { name: match[1].trim(), score, rawScore: match[2].trim() };
+                                      }
+                                      return { name: str, score: 0, rawScore: '' };
+                                    });
+                                  }
+                                  if (competitors.length > 0) {
+                                    return (
+                                      <>
+                                        <ChartContainer
+                                          config={Object.fromEntries(competitors.map((c, i) => [c.name, { label: c.name, color: `hsl(${(i * 60) % 360}, 60%, 40%)` }]))}
+                                          className="h-64"
+                                        >
+                                          <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart
+                                              data={competitors}
+                                              layout="vertical"
+                                              margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                                            >
+                                              <XAxis type="number" domain={[0, 10]} className="text-xs" />
+                                              <YAxis dataKey="name" type="category" className="text-xs" width={120} />
+                                              <ChartTooltip content={<ChartTooltipContent />} />
+                                              <Bar dataKey="score" radius={[8, 8, 8, 8]} fill="#6366f1">
+                                                {competitors.map((entry, idx) => (
+                                                  <Cell key={`cell-${idx}`} fill={`hsl(${(idx * 60) % 360}, 60%, 40%)`} />
+                                                ))}
+                                              </Bar>
+                                            </BarChart>
+                                          </ResponsiveContainer>
+                                        </ChartContainer>
+                                        {analysisResult?.competitorBenchmarking?.topCompetitors && (
+                                          <div className="mt-8">
+                                            <div className="font-semibold text-black mb-2">Top Competitors</div>
+                                            <div className="flex flex-wrap gap-2">
+                                              {analysisResult.competitorBenchmarking.topCompetitors.map((c, i) => (
+                                                <span
+                                                  key={i}
+                                                  className="px-3 py-1 rounded-full bg-black text-white text-xs font-semibold shadow hover:bg-gray-900 transition"
+                                                >
+                                                  {c}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  }
+                                  return <div className="text-gray-400 text-sm">No competitor data available.</div>;
+                                })()}
+                              </CardContent>
+                            </Card>
+                          </TabsContent>
+
+                          {/* Growth Tab */}
+                          <TabsContent value="growth" className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              {analysisResult?.growthOpportunityProjection ? (
+                                [
+                                  { label: '1 Year', value: analysisResult.growthOpportunityProjection["1Year"] },
+                                  { label: '3 Years', value: analysisResult.growthOpportunityProjection["3Years"] },
+                                  { label: '5 Years', value: analysisResult.growthOpportunityProjection["5Years"] },
+                                ].map((item, idx) => (
+                                  <Card key={item.label} className="border-gray-200/40 shadow-lg bg-white/90 flex flex-col justify-between">
+                                    <CardHeader>
+                                      <CardTitle className="text-lg text-gray-900 flex items-center">
+                                        <LineChartIcon className="h-5 w-5 mr-2 text-green-500" />
+                                        {item.label} Projection
+                                      </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                      <div className="text-gray-700 text-base min-h-[80px] flex items-center">{item.value}</div>
+                                    </CardContent>
+                                  </Card>
+                                ))
+                              ) : (
+                                <Card className="border-gray-200/40 shadow-lg bg-white/90">
+                                  <CardContent>
+                                    <div className="text-gray-400 text-sm">No growth projection data available.</div>
+                                  </CardContent>
+                                </Card>
+                              )}
+                            </div>
+                          </TabsContent>
+
+                          {/* Improvements Tab */}
+                          <TabsContent value="improvements" className="space-y-6">
+                            <Card className="border-gray-200/40 shadow-lg bg-white/90">
+                              <CardHeader className="pb-2">
+                                <div className="text-center space-y-2">
+                                  <h3 className="text-2xl font-bold text-gray-900 flex items-center justify-center">
+                                    <Rocket className="h-6 w-6 mr-2 text-blue-500" />
+                                    Key Improvements & Recommendations
+                                  </h3>
+                                  <p className="text-gray-600">
+                                    AI-powered actionable insights to enhance your
+                                    startup's success potential
+                                  </p>
                                 </div>
-                                <p className="text-gray-600 max-w-2xl mx-auto">
-                                  Focus on high-priority improvements first.
-                                  These recommendations are based on AI analysis
-                                  of successful startups in similar markets.
-                                  Consider implementing these changes
-                                  iteratively to maximize impact while managing
-                                  resources effectively.
-                                </p>
-                                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                                  <Rocket className="h-4 w-4 mr-2" />
-                                  Download Action Plan
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
+                              </CardHeader>
+                              <CardContent className="p-6 md:p-10">
+                                <div className="grid gap-6">
+                                  {Array.isArray(analysisResult?.keyRecommendations) && analysisResult.keyRecommendations.length > 0 ? (
+                                    analysisResult.keyRecommendations.map((improvement, index) => (
+                                      <ImprovementCard key={index} improvement={improvement} />
+                                    ))
+                                  ) : (
+                                    <div className="text-gray-400 text-sm">No recommendations available.</div>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </TabsContent>
+                        </Tabs>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
