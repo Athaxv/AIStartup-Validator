@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🚀 Startup Idea Validator
 
-## Getting Started
+> An intelligent validator for your next big startup idea — powered by AI.  
+> Built with `Next.js`, `Prisma ORM`, `NeonDB`, `Gemini API`, and styled with `ShadCN`.
 
-First, run the development server:
+---
 
-```bash
+## 📌 Overview
+
+**Startup Idea Validator** is a full-stack web application that helps entrepreneurs validate their startup ideas using AI. It analyzes your idea based on key startup parameters like pitch, market, revenue model, and more — returning a **detailed analysis**, **AI-powered score**, and **key improvements** to enhance your pitch.
+
+---
+
+## ⚙️ Tech Stack
+
+| Layer          | Technology                     |
+| -------------- | ------------------------------ |
+| Frontend       | Next.js + ShadCN UI            |
+| Backend        | API Routes (Next.js)           |
+| ORM            | Prisma ORM                     |
+| Database       | NeonDB                         |
+| AI Integration | Gemini API (by Google)         |
+| Styling        | Tailwind CSS + ShadCN          |
+
+---
+
+## 🧠 Features
+
+- ✅ **Form-driven Input**: Collects startup name, pitch, model, market, and pain points.
+- 🎯 **AI-Powered Evaluation**: Sends your idea to Gemini API and returns:
+  - 🔍 In-depth analysis
+  - 📈 AI score (0–100)
+  - 🔧 Tailored improvement suggestions
+- 💡 **Responsive Design** with clean animations and beautiful UI using `ShadCN`.
+
+---
+
+## 🏗️ Project Structure
+
+/app
+/api/analyze-startup.ts # API route for Gemini processing
+/components/ # Reusable UI components (ShadCN)
+/lib/db.ts # Prisma + NeonDB connection
+/pages # Page components
+/styles # Tailwind styles
+prisma/schema.prisma # DB schema
+
+
+---
+
+## 🔐 Environment Variables
+
+Create a `.env` file in the root and add the following:
+
+```env
+DATABASE_URL="your-neondb-url"
+GEMINI_API_KEY="your-google-gemini-api-key"
+
+
+git clone https://github.com/yourusername/startup-idea-validator.git
+cd startup-idea-validator
+npm install
+
+# Setup DB
+npx prisma generate
+npx prisma migrate dev
+
+# Run locally
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
