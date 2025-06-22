@@ -249,10 +249,10 @@ export default function ParticlesBackground({
                     transition={{ duration: 0.8 }}
                     className="text-center space-y-4"
                 >
-                    <h1 className="text-6xl md:text-7xl w-4xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-black to-black/70 dark:from-white dark:to-white/70 drop-shadow-sm">
+                    <h1 className="text-3xl md:text-7xl flex justify-center max-w-4xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-black to-black/70 dark:from-white dark:to-white/70 drop-shadow-sm">
                         {title}
                     </h1>
-                    <p className="text-xl md:text-xl font-medium bg-clip-text text-transparent bg-gradient-to-b from-black/90 to-black/50 dark:from-white/90 dark:to-white/50">
+                    <p className="text-lg md:text-xl font-medium bg-clip-text text-transparent bg-gradient-to-b from-black/90 to-black/50 dark:from-white/90 dark:to-white/50">
                         {subtitle}
                     </p>
                     <Button variant={'outline'} onClick={() => router.push('/form')} className={'mt-3 font-bold'}>Get Started</Button>
