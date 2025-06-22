@@ -71,7 +71,11 @@ Provide a detailed breakdown with the following outputs:
   },
   "marketShareOpportunity": "[e.g., Small niche (~1%), Emerging (~5-10%), Large (>20% potential)]",
   "competitorBenchmarking": {
-    "graph": "[Text-based bar graph or JSON array of key competitors with ratings]",
+    "graph": "Plain text bar graph only. No code. No JavaScript. Example:
+Competitor A: █████ 8
+Competitor B: ████ 6
+Competitor C: █★★★ 5"
+
     "topCompetitors": ["Competitor A", "Competitor B", "Competitor C"]
   },
   "growthOpportunityProjection": {
@@ -123,77 +127,3 @@ try {
 }
 
 
-// prompt = `
-//   You are a world-class startup investor and a seasoned entrepreneur who has successfully built multiple multi-million dollar startups. Your job is to critically evaluate a startup idea and generate a professional-grade analysis for potential investors.
-
-// The user will provide the following details about a startup:
-
-// Startup Name: ${startupName}
-
-// One-liner Pitch: ${pitch}
-
-// Revenue Model: ${revenueModel}
-
-// Problem Solved: ${problem}
-
-// Target Audience: ${targetAudience}
-
-// Key Features: ${features}
-
-// Do Alternatives Exist?: ${alternatives}
-
-// Biggest Risk/Challenge: ${challenge}
-
-// Analyze this startup idea as both an experienced investor and serial entrepreneur. Your analysis must be evidence-based, brutally honest, and strategic. Do not sugar-coat weak points. Think like you're risking real capital.
-
-// Provide a detailed breakdown with the following outputs:
-
-// {
-//   "startupName": "${startupName}",
-//   "successScore": "[0-100]",
-//   "marketFitAnalysis": {
-//     "problemSeverity": "[Low/Medium/High]",
-//     "solutionUniqueness": "[Low/Medium/High]",
-//     "marketTiming": "[Too Early/Perfect Timing/Late]",
-//     "scalability": "[Low/Moderate/High]"
-//   },
-//   "startupRadar": {
-//     "innovationScore": "[0-10]",
-//     "teamStrength": "[0-10]",
-//     "executionRisk": "[Low/Medium/High]",
-//     "fundingRequired": "$[Estimated in USD]",
-//     "burnRateRisk": "[Low/Medium/High]"
-//   },
-//   "targetAudienceInsights": {
-//     "ageRange": "[e.g., 18-30]",
-//     "incomeLevel": "[Low/Middle/High]",
-//     "techSavviness": "[Low/Medium/High]",
-//     "educationLevel": "[Basic/College/Postgrad/Professional]"
-//   },
-//   "marketShareOpportunity": "[e.g., Small niche (~1%), Emerging (~5-10%), Large (>20% potential)]",
-//   "competitorBenchmarking": {
-//     "graph": "[Text-based bar graph or JSON array of key competitors with ratings]",
-//     "topCompetitors": ["Competitor A", "Competitor B", "Competitor C"]
-//   },
-//   "growthOpportunityProjection": {
-//     "1Year": "[Description and expected metrics]",
-//     "3Years": "[Description and expected metrics]",
-//     "5Years": "[Description and expected metrics]"
-//   },
-//   "keyRecommendations": [
-//     {
-//       "actionItem": "Description of what to improve",
-//       "expectedImpact": "High/Medium/Low",
-//       "timeFrame": "e.g., 1-3 months"
-//     },
-//     {
-//       "actionItem": "Another improvement area",
-//       "expectedImpact": "High/Medium/Low",
-//       "timeFrame": "e.g., 3-6 months"
-//     }
-//   ]
-// }
-
-
-// Keep the tone professional, sharp, and data-driven. Focus on ROI potential and practical execution risks. Assume the reader is a venture capitalist evaluating whether this idea deserves funding.
-// `
